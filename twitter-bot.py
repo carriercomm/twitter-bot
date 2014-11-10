@@ -78,7 +78,10 @@ class TBotInit:
         except:
             pass
 
-        sql = "INSERT INTO accounts VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % ( username, consumer_key, consumer_secret, access_token, access_token_secret, accounts, keywords, datetime.now() )
+        sql = "INSERT INTO accounts VALUES ('%s', '%s', '%s', '%s', '%s', \
+            '%s', '%s', '%s')" % ( username, consumer_key, consumer_secret,
+            access_token, access_token_secret, accounts, keywords,
+            datetime.now() )
 
         c.execute(sql)
         conn.commit()
@@ -158,21 +161,22 @@ class TweetBot:
         pass
 
     def decide_to_unfollow(self, username):
-        # check date user was followed
-        # if user was followed between 1 and two weeks ago (pick random date) unfollow
+        # Check date user was followed
+        # Ff user was followed between 1 and two weeks ago (pick random date)
+        # then unfollow
         pass
 
     def decide_to_favourite(self, tweets):
         pass
 
     def pull_followers(self, account):
-        # pull users following account
-        # store in database
+        # Pull users following account
+        # Store in database
         pass
 
     def pull_following(self, account):
-        # pull users account is following
-        # store in database
+        # Pull users account is following
+        # Store in database
         pass
 
     def follow_user(self, username):
