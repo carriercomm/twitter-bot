@@ -19,4 +19,6 @@ contain a pre-selected key-word. If more than one tweet contains the
 key-word then the most recent tweet to contain that key-word is
 favourited.
 
+Usage stats are stored and the user can view these stats when desired.
+
 smenvis
