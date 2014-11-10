@@ -10,7 +10,7 @@ from datetime import datetime
 __VERSION__ = '0.1'
 __AUTHOR__ = 'smenvis'
 
-SLEEP_TIME = 300
+SLEEP_TIME = 15
 
 class TBotInit:
     def main(self):
@@ -91,10 +91,25 @@ class TBotInit:
         while len(username) < 1:
             username = raw_input('Enter username of account to remove: ')
 
-        # remove account here
+        conn = sqlite3.connect('twitter-bot.db')
+        c = conn.cursor()
+
+        sql = "SELECT * FROM accounts WHERE username = '%s'" % username
+        c.execute(sql)
+
+        account = c.fetchall()
+
+        if len(account) == 0:
+            print 'Error: Account with username \'%s\' not found' % username
+            self.cli()
+
+        sql = "DELETE FROM accounts WHERE username ='%s'" % username
+
+        c.execute(sql)
+        conn.commit()
+
         print 'Success: %s removed from TwitterBot' % username
-        print 'Error: Account with username \'%s\' not found' % username
-        # dsiplay success or error message
+
         self.cli()
 
     def tbot_help(self):
@@ -109,14 +124,23 @@ class TBotInit:
 
     def tbot_start(self):
         print 'Starting TwitterBot...'
-        # for account in accounts call TweetBot
+
+        conn = sqlite3.connect('twitter-bot.db')
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM accounts")
+        accounts = cur.fetchall()
+
         while 1:
-            print 'Doing stuff here...'
-            time.sleep(SLEEP_TIME)
+            for account in accounts:
+                TweetBot(account).main()
+                print 'Sleeping for %i seconds...' % SLEEP_TIME
+                time.sleep(SLEEP_TIME)
 
 
 class TweetBot:
     def __init__(self, account):
+        self.account = account
+        self.username = self.account[0]
         self.consumer_key = self.account[1]
         self.consumer_secret = self.account[2]
         self.access_token = self.account[3]
@@ -125,18 +149,30 @@ class TweetBot:
         self.keywords = self.accounts[6]
 
     def main(self):
+        print 'Starting TweetBot for %s' % self.username
+        # self.pull_followers(account)
+        # self.pull_following(account)
         pass
 
     def decide_to_follow(self, username, tweets):
         pass
 
     def decide_to_unfollow(self, username):
+        # check date user was followed
+        # if user was followed between 1 and two weeks ago (pick random date) unfollow
         pass
 
     def decide_to_favourite(self, tweets):
         pass
 
-    def pull_followers(self, username):
+    def pull_followers(self, account):
+        # pull users following account
+        # store in database
+        pass
+
+    def pull_following(self, account):
+        # pull users account is following
+        # store in database
         pass
 
     def follow_user(self, username):
