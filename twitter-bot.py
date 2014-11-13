@@ -10,6 +10,9 @@ from datetime import datetime
 __VERSION__ = '0.1'
 __AUTHOR__ = 'smenvis'
 
+CONSUMER_KEY = ''
+CONSUMER_SECRET = ''
+
 SLEEP_TIME = 15
 
 class TBotInit:
@@ -28,14 +31,14 @@ class TBotInit:
 
     def cli(self):
         command = raw_input('Enter command (type \'help\' for help): ')
-        if command == 'help':
-            self.tbot_help()
-        elif command == 'start':
+        if command == 'start':
             self.tbot_start()
-        elif command == 'config':
-            self.tbot_config()
+        elif command == 'setup':
+            self.tbot_setup()
         elif command == 'remove':
             self.remove_account()
+        elif command == 'help':
+            self.tbot_help()
         elif command == 'exit':
             print 'Exiting TwitterBot cleanly.'
             sys.exit()
@@ -43,7 +46,7 @@ class TBotInit:
             print 'Error: Unknown command.'
             self.cli()
 
-    def tbot_config(self):
+    def tbot_setup(self):
         command = raw_input('Do you want to setup TweetBot (y/n)? ')
         if command == 'n':
             self.cli()
@@ -54,10 +57,9 @@ class TBotInit:
         print 'Please enter the following details to configure TweetBot:'
         # TODO: Add error correction to ensure user enters values
         username = raw_input('Username: ')
-        consumer_key = raw_input('Consumer Key: ')
-        consumer_secret = raw_input('Consumer Secret: ')
-        access_token = raw_input('Access Token: ')
-        access_token_secret = raw_input('Access Token Secret: ')
+        #access_token = raw_input('Access Token: ')
+        #access_token_secret = raw_input('Access Token Secret: ')
+        access_tokens = self.authorise_twitter_app()
         print 'Seperate Twitter Accounts and Keywords with \',\''
         accounts = raw_input('Enter Twitter Accounts: ')
         keywords = raw_input('Enter Keywords: ')
@@ -68,8 +70,6 @@ class TBotInit:
         try:
             c.execute('''CREATE TABLE accounts (
                           username text,
-                          consumer_key text,
-                          consumer_secret text,
                           access_token text,
                           access_token_secret text,
                           twitter_accounts text,
@@ -79,15 +79,27 @@ class TBotInit:
             pass
 
         sql = "INSERT INTO accounts VALUES ('%s', '%s', '%s', '%s', '%s', \
-            '%s', '%s', '%s')" % ( username, consumer_key, consumer_secret,
-            access_token, access_token_secret, accounts, keywords,
-            datetime.now() )
+            '%s')" % ( username, access_tokens[0], access_tokens[1], accounts,
+            keywords, datetime.now() )
 
         c.execute(sql)
         conn.commit()
 
         print 'Success: Twitter Account added to database.'
         self.cli()
+
+    def authorise_twitter_app(self):
+        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        auth_url = auth.get_authorization_url()
+
+        print 'Please authorize: ' + auth_url
+        verifier = raw_input('PIN: ').strip()
+        auth.get_access_token(verifier)
+
+        print "ACCESS_KEY = '%s'" % auth.access_token.key
+        print "ACCESS_SECRET = '%s'" % auth.access_token.secret
+
+        return auth.access_token.key, auth.access_token.secret
 
     def remove_account(self):
         username = ''
@@ -120,7 +132,7 @@ class TBotInit:
         print '\thelp - prints this help information'
         print '\tstart - starts twitter-bot'
         print '\tstats - displays usage stats'
-        print '\tconfig - config twitter-bot'
+        print '\tsetup - setup twitter-bot'
         print '\tremove - remove Twitter account'
         print '\texit - exit twitter-bot\n'
         self.cli()
@@ -144,15 +156,18 @@ class TweetBot:
     def __init__(self, account):
         self.account = account
         self.username = self.account[0]
-        self.consumer_key = self.account[1]
-        self.consumer_secret = self.account[2]
-        self.access_token = self.account[3]
-        self.access_token_secret = self.account[4]
-        self.accounts = self.account[5]
-        self.keywords = self.accounts[6]
+        self.access_token = self.account[1]
+        self.access_token_secret = self.account[2]
+        self.accounts = self.account[3]
+        #self.keywords = self.accounts[6]
+
+        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        auth.set_access_token(self.access_token, self.access_token_secret)
+
+        self.api = tweepy.API(auth)
 
     def main(self):
-        print 'Starting TweetBot for %s' % self.username
+        print 'Starting TweetBot for %s' % self.api.me().screen_name
         # self.pull_followers(account)
         # self.pull_following(account)
         pass
@@ -162,8 +177,8 @@ class TweetBot:
 
     def decide_to_unfollow(self, username):
         # Check date user was followed
-        # Ff user was followed between 1 and two weeks ago (pick random date)
-        # then unfollow
+        # If user was followed between 1 and two weeks ago (pick random date)
+        # - then unfollow
         pass
 
     def decide_to_favourite(self, tweets):
