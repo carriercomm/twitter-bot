@@ -5,6 +5,7 @@ import tweepy
 import sys
 import sqlite3
 import time
+import random
 from datetime import datetime
 
 __VERSION__ = '0.1'
@@ -13,7 +14,7 @@ __AUTHOR__ = 'smenvis'
 CONSUMER_KEY = ''
 CONSUMER_SECRET = ''
 
-SLEEP_TIME = 15
+SLEEP_TIME = 5
 
 class TBotInit:
     def main(self):
@@ -55,14 +56,22 @@ class TBotInit:
             self.tbot_config()
 
         print 'Please enter the following details to configure TweetBot:'
-        # TODO: Add error correction to ensure user enters values
-        username = raw_input('Username: ')
-        #access_token = raw_input('Access Token: ')
-        #access_token_secret = raw_input('Access Token Secret: ')
+
+        username = ''
+        while username < 1:
+            username = raw_input('Username: ')
+
         access_tokens = self.authorise_twitter_app()
+
         print 'Seperate Twitter Accounts and Keywords with \',\''
-        accounts = raw_input('Enter Twitter Accounts: ')
-        keywords = raw_input('Enter Keywords: ')
+
+        accounts = ''
+        while accounts < 1:
+            accounts = raw_input('Enter Twitter Accounts: ')
+
+        keywords = ''
+        while keywords < 1:
+            keywords = raw_input('Enter Keywords: ')
 
         conn = sqlite3.connect('twitter-bot.db')
         c = conn.cursor()
@@ -93,11 +102,11 @@ class TBotInit:
         auth_url = auth.get_authorization_url()
 
         print 'Please authorize: ' + auth_url
-        verifier = raw_input('PIN: ').strip()
+        verifier = raw_input('Enter PIN: ').strip()
         auth.get_access_token(verifier)
 
-        print "ACCESS_KEY = '%s'" % auth.access_token.key
-        print "ACCESS_SECRET = '%s'" % auth.access_token.secret
+        #print "ACCESS_KEY = '%s'" % auth.access_token.key
+        #print "ACCESS_SECRET = '%s'" % auth.access_token.secret
 
         return auth.access_token.key, auth.access_token.secret
 
@@ -159,7 +168,7 @@ class TweetBot:
         self.access_token = self.account[1]
         self.access_token_secret = self.account[2]
         self.accounts = self.account[3]
-        #self.keywords = self.accounts[6]
+        #self.keywords = self.accounts[4]
 
         auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
         auth.set_access_token(self.access_token, self.access_token_secret)
@@ -167,15 +176,46 @@ class TweetBot:
         self.api = tweepy.API(auth)
 
     def main(self):
-        print 'Starting TweetBot for %s' % self.api.me().screen_name
-        # self.pull_followers(account)
-        # self.pull_following(account)
+        try:
+            screen_name = self.api.me().screen_name
+        except:
+            # TODO: Display actual returned error from Twitter
+            print 'Error: Unable to pull Twitter username.'
+
+        print 'Starting TweetBot for %s' % screen_name
+        print 'Picking random account'
+        username = self.pick_random_account()
+        print 'Pulling followers for %s' % username
+        followers = self.pull_followers(username)
+        if followers != 1:
+            print '%i followers returned for %s' % (len(followers), username)
+        else:
+            print 'Error: Unable to pull followers for %s' % username
+            return
+
+        print 'Deciding to follow random user'
+        self.decide_to_follow(followers)
+
+        print 'Deciding to unfollow user'
+        self.decide_to_unfollow()
+
+    def pick_random_account(self):
+        usernames = self.accounts.split(",")
+        random_user = random.randrange(0,len(usernames))
+        print usernames[random_user].strip()
+        return usernames[random_user].strip()
+
+    def decide_to_follow(self, followers):
+        # pick random user from followers
+        # pull top 100 tweets for random user
+        # check if keywords in tweet
+        # if so return user
+        # if not pick another user
+        # favourite tweet
+        # follow user
         pass
 
-    def decide_to_follow(self, username, tweets):
-        pass
-
-    def decide_to_unfollow(self, username):
+    def decide_to_unfollow(self):
         # Check date user was followed
         # If user was followed between 1 and two weeks ago (pick random date)
         # - then unfollow
@@ -184,10 +224,11 @@ class TweetBot:
     def decide_to_favourite(self, tweets):
         pass
 
-    def pull_followers(self, account):
-        # Pull users following account
-        # Store in database
-        pass
+    def pull_followers(self, username):
+        try:
+            return self.api.followers_ids(username)
+        except:
+            return 1 # TODO: Return actual error
 
     def pull_following(self, account):
         # Pull users account is following
