@@ -177,16 +177,18 @@ class TweetBot:
 
     def main(self):
         try:
-            screen_name = self.api.me().screen_name
+            print 'Starting TweetBot for %s' % self.api.me().screen_name
         except:
             # TODO: Display actual returned error from Twitter
             print 'Error: Unable to pull Twitter username.'
+            return
 
-        print 'Starting TweetBot for %s' % screen_name
         print 'Picking random account'
         username = self.pick_random_account()
+
         print 'Pulling followers for %s' % username
         followers = self.pull_followers(username)
+
         if followers != 1:
             print '%i followers returned for %s' % (len(followers), username)
         else:
@@ -201,14 +203,22 @@ class TweetBot:
 
     def pick_random_account(self):
         usernames = self.accounts.split(",")
-        random_user = random.randrange(0,len(usernames))
-        print usernames[random_user].strip()
+        random_user = random.randrange(0,len(usernames)) # -1
+        print 'Random account: %s' % usernames[random_user].strip()
         return usernames[random_user].strip()
 
     def decide_to_follow(self, followers):
         # pick random user from followers
-        # pull top 100 tweets for random user
-        # check if keywords in tweet
+        random_user = random.randrange(0,len(followers)) # -1
+        print 'Deciding to follow %s' % followers[random_user]
+
+        tweets = self.pull_tweets(followers[random_user])
+        if tweets == 1:
+            self.decide_to_follow(followers)
+
+        if not self.parse_tweets(followers[random_user]):
+            return
+
         # if so return user
         # if not pick another user
         # favourite tweet
@@ -244,10 +254,20 @@ class TweetBot:
     def favourite_tweet(self, tweet):
         pass
 
-    def pull_tweets(self, username):
-        pass
+    def pull_tweets(self, userid):
+        print 'Pulling top 100 tweets for %s' % userid
+        try:
+            tweets = api.user_timeline(userid, count=100)
+        except:
+            print 'Error: Unable to pull tweets for %s' % userid
+            return 1
+        
+        return tweets
 
-    def parse_tweets(self, keywords, tweets):
+    def parse_tweets(self, tweets):
+        # Check if keys words in tweets
+        # If so, return True
+        # Else return False
         pass
 
 
